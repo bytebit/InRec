@@ -45,61 +45,101 @@ public class RecordingService extends Service {
     }
 
     private void startRecording(int resultCode, Intent data) {
-        MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
-        mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data);
-
-        mediaRecorder = new MediaRecorder();
-        
-        // 适配华为手机的音频源选择
-        int audioSource;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10+/HarmonyOS 2+ 用UNPROCESSED
-            audioSource = MediaRecorder.AudioSource.UNPROCESSED;
-        } else {
-            // EMUI 9.x 用REMOTE_SUBMIX
-            audioSource = MediaRecorder.AudioSource.REMOTE_SUBMIX;
-        }
-        mediaRecorder.setAudioSource(audioSource);
-
-        // 华为机型推荐的输出格式/编码
-        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-
-        // 华为机型音质优化参数
-        mediaRecorder.setAudioSamplingRate(48000); // 华为音频总线默认48kHz采样率
-        mediaRecorder.setAudioEncodingBitRate(192000); // 192kbps保证高清音质
-        mediaRecorder.setAudioChannels(2); // 立体声
-
-        // 设置输出路径到download目录，m4a格式
-        outputFilePath = getOutputFilePath();
-        mediaRecorder.setOutputFile(outputFilePath);
-
         try {
+            MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
+            mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data);
+
+            if (mediaProjection == null) {
+                Log.e("RecordingService", "MediaProjection获取失败");
+                stopSelf();
+                return;
+            }
+
+            mediaRecorder = new MediaRecorder();
+            
+            // 适配华为手机的音频源选择
+            int audioSource;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Android 10+/HarmonyOS 2+ 用UNPROCESSED
+                audioSource = MediaRecorder.AudioSource.UNPROCESSED;
+            } else {
+                // EMUI 9.x 用REMOTE_SUBMIX
+                audioSource = MediaRecorder.AudioSource.REMOTE_SUBMIX;
+            }
+            mediaRecorder.setAudioSource(audioSource);
+
+            // 华为机型推荐的输出格式/编码
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+
+            // 华为机型音质优化参数
+            mediaRecorder.setAudioSamplingRate(48000); // 华为音频总线默认48kHz采样率
+            mediaRecorder.setAudioEncodingBitRate(192000); // 192kbps保证高清音质
+            mediaRecorder.setAudioChannels(2); // 立体声
+
+            // 设置输出路径到download目录，m4a格式
+            outputFilePath = getOutputFilePath();
+            mediaRecorder.setOutputFile(outputFilePath);
+
             mediaRecorder.prepare();
             mediaRecorder.start();
             startForeground(NOTIFICATION_ID, createNotification());
             Log.d("RecordingService", "华为内录已启动，文件路径：" + outputFilePath);
         } catch (IOException e) {
             Log.e("RecordingService", "华为内录器初始化失败：" + e.getMessage());
+            e.printStackTrace();
+            stopSelf();
+        } catch (SecurityException e) {
+            Log.e("RecordingService", "权限错误：" + e.getMessage());
+            e.printStackTrace();
+            stopSelf();
+        } catch (IllegalStateException e) {
+            Log.e("RecordingService", "状态错误：" + e.getMessage());
+            e.printStackTrace();
+            stopSelf();
+        } catch (Exception e) {
+            Log.e("RecordingService", "未知错误：" + e.getMessage());
+            e.printStackTrace();
             stopSelf();
         }
     }
 
     private String getOutputFilePath() {
-        File downloadDir;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        } else {
-            downloadDir = new File(Environment.getExternalStorageDirectory(), "Download");
+        try {
+            File downloadDir;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            } else {
+                downloadDir = new File(Environment.getExternalStorageDirectory(), "Download");
+            }
+            
+            if (!downloadDir.exists()) {
+                boolean created = downloadDir.mkdirs();
+                if (!created) {
+                    Log.e("RecordingService", "无法创建下载目录，使用应用私有目录");
+                    // 使用应用私有目录作为备选
+                    File appDir = new File(getFilesDir(), "InRec");
+                    if (!appDir.exists()) {
+                        appDir.mkdirs();
+                    }
+                    downloadDir = appDir;
+                }
+            }
+            
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = "InRec_" + timeStamp + ".m4a";
+            return new File(downloadDir, fileName).getAbsolutePath();
+        } catch (Exception e) {
+            Log.e("RecordingService", "获取输出文件路径失败：" + e.getMessage());
+            // 出错时返回应用私有目录的路径
+            File appDir = new File(getFilesDir(), "InRec");
+            if (!appDir.exists()) {
+                appDir.mkdirs();
+            }
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = "InRec_" + timeStamp + ".m4a";
+            return new File(appDir, fileName).getAbsolutePath();
         }
-        
-        if (!downloadDir.exists()) {
-            downloadDir.mkdirs();
-        }
-        
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String fileName = "InRec_" + timeStamp + ".m4a";
-        return new File(downloadDir, fileName).getAbsolutePath();
     }
 
     private void createNotificationChannel() {

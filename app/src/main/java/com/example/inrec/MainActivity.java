@@ -98,17 +98,33 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_SCREEN_CAPTURE && resultCode == RESULT_OK && data != null) {
-            serviceIntent = new Intent(this, RecordingService.class);
-            serviceIntent.putExtra("resultCode", resultCode);
-            serviceIntent.putExtra("data", data);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
+        if (requestCode == REQUEST_SCREEN_CAPTURE) {
+            if (resultCode == RESULT_OK && data != null) {
+                try {
+                    serviceIntent = new Intent(this, RecordingService.class);
+                    serviceIntent.putExtra("resultCode", resultCode);
+                    serviceIntent.putExtra("data", data);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent);
+                    } else {
+                        startService(serviceIntent);
+                    }
+                    isRecording = true;
+                    recordButton.setText(R.string.stop_record);
+                    Toast.makeText(this, "录音已开始", Toast.LENGTH_SHORT).show();
+                } catch (SecurityException e) {
+                    Toast.makeText(this, "启动录音服务失败: 权限错误", Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                } catch (IllegalStateException e) {
+                    Toast.makeText(this, "启动录音服务失败: 状态错误", Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    Toast.makeText(this, "启动录音服务失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                }
             } else {
-                startService(serviceIntent);
+                Toast.makeText(this, "屏幕录制权限被拒绝", Toast.LENGTH_SHORT).show();
             }
-            isRecording = true;
-            recordButton.setText(R.string.stop_record);
         }
     }
 }
