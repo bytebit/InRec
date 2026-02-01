@@ -36,10 +36,15 @@ public class RecordingService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // 立即显示前台服务通知，避免系统杀死服务
+        startForeground(NOTIFICATION_ID, createNotification());
+        
         if (intent != null) {
             int resultCode = intent.getIntExtra("resultCode", 0);
             Intent data = intent.getParcelableExtra("data");
             startRecording(resultCode, data);
+        } else {
+            stopSelf();
         }
         return START_NOT_STICKY;
     }
@@ -83,7 +88,6 @@ public class RecordingService extends Service {
 
             mediaRecorder.prepare();
             mediaRecorder.start();
-            startForeground(NOTIFICATION_ID, createNotification());
             Log.d("RecordingService", "华为内录已启动，文件路径：" + outputFilePath);
         } catch (IOException e) {
             Log.e("RecordingService", "华为内录器初始化失败：" + e.getMessage());
