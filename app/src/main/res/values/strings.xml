@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">InRec</string>
-    <string name="start_record">开始录音</string>
-    <string name="stop_record">停止录音</string>
-    <string name="permission_denied">权限被拒绝</string>
-    <string name="record_saved">录音已保存到Download目录</string>
-    <string name="record_failed">录音失败</string>
-</resources>
