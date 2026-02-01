@@ -121,14 +121,14 @@ public class RecordingService extends Service {
             Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
                     .setContentTitle("InRec")
                     .setContentText("正在录音...")
-                    .setSmallIcon(android.R.drawable.ic_media_record)
+                    .setSmallIcon(android.R.drawable.ic_btn_speak_now)
                     .setPriority(Notification.PRIORITY_LOW);
             return builder.build();
         } else {
             Notification.Builder builder = new Notification.Builder(this)
                     .setContentTitle("InRec")
                     .setContentText("正在录音...")
-                    .setSmallIcon(android.R.drawable.ic_media_record)
+                    .setSmallIcon(android.R.drawable.ic_btn_speak_now)
                     .setPriority(Notification.PRIORITY_LOW);
             return builder.build();
         }
