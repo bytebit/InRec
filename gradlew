@@ -107,7 +107,7 @@ function splitJvmOpts() {
     JVM_OPTS=()
     local IFS=$'\n'
     for opt in $(echo "$*" | grep -E '(^|\s)-' | sed -E 's/(^|\s)-([^\s]+)/-\2/g'); do
-        JVM_OPTS+=("$opt")
+        JVM_OPTS+=(["$opt"])
     done
 }
 
@@ -120,21 +120,21 @@ function collectArgs() {
     for arg in "$@"; do
         if [ "$arg" = "--debug" ]; then
             set -- "${@:1:$(($#-1))}"
-            args+=("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005")
+            args+=(["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"])
         elif [ "$arg" = "--no-daemon" ]; then
             set -- "${@:1:$(($#-1))}"
-            args+=("-Dorg.gradle.daemon=false")
+            args+=(["-Dorg.gradle.daemon=false"])
         elif [ "$arg" = "--daemon" ]; then
             set -- "${@:1:$(($#-1))}"
-            args+=("-Dorg.gradle.daemon=true")
+            args+=(["-Dorg.gradle.daemon=true"])
         elif [ "$arg" = "--stop" ]; then
             set -- "${@:1:$(($#-1))}"
-            args+=("-Dorg.gradle.stop=true")
+            args+=(["-Dorg.gradle.stop=true"])
         elif [ "$arg" = "--status" ]; then
             set -- "${@:1:$(($#-1))}"
-            args+=("-Dorg.gradle.status=true")
+            args+=(["-Dorg.gradle.status=true"])
         else
-            args+=("$arg")
+            args+=(["$arg"])
         fi
     done
     echo "${args[@]}"
