@@ -30,11 +30,14 @@ jobs:
           ${{ runner.os }}-gradle-
 
     - name: Build with Gradle
-      run: gradle build --no-daemon --stacktrace
+      run: gradle assembleRelease --no-daemon --stacktrace
+
+    - name: List build outputs
+      run: ls -la app/build/outputs/apk/release/
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-release
-        path: app/build/outputs/apk/release/app-release.apk
+        path: app/build/outputs/apk/release/
         if-no-files-found: warn
