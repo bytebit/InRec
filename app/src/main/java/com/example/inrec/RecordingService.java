@@ -79,8 +79,33 @@ public class RecordingService extends Service {
 
             // 华为机型音质优化参数
             mediaRecorder.setAudioSamplingRate(48000); // 华为音频总线默认48kHz采样率
-            mediaRecorder.setAudioEncodingBitRate(192000); // 192kbps保证高清音质
+            mediaRecorder.setAudioEncodingBitRate(256000); // 256kbps提高音质和音量
             mediaRecorder.setAudioChannels(2); // 立体声
+            // 尝试设置音频增益
+            try {
+                // 注意：setAudioGain可能在某些设备上不可用
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    // Android 11+ 可以尝试使用AudioAttributes来提高音量
+                    android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build();
+                    // 反射设置音频属性
+                    java.lang.reflect.Method setAudioAttributesMethod = MediaRecorder.class.getMethod("setAudioAttributes", android.media.AudioAttributes.class);
+                    setAudioAttributesMethod.invoke(mediaRecorder, audioAttributes);
+                }
+                
+                // 尝试设置音频增益值
+                try {
+                    java.lang.reflect.Method setAudioGainMethod = MediaRecorder.class.getMethod("setAudioGain", int.class);
+                    setAudioGainMethod.invoke(mediaRecorder, 10); // 设置增益值为10（范围0-10）
+                    Log.d("RecordingService", "成功设置音频增益");
+                } catch (Exception e) {
+                    Log.d("RecordingService", "设置音频增益失败（可能不支持）：" + e.getMessage());
+                }
+            } catch (Exception e) {
+                Log.d("RecordingService", "设置音频属性失败：" + e.getMessage());
+            }
 
             // 设置输出路径到download目录，m4a格式
             outputFilePath = getOutputFilePath();
